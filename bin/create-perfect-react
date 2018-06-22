@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+'use strict'
+
+process.env.NODE_PATH = __dirname + '/../node_modules/'
+
+const program = require('commander')
+
+program.version(require('../package').version)
+
+program.usage('<command>')
+
+program
+  .command('init')
+  .description('Generate a new perfect react project')
+  .alias('i')
+  .action((...cmd) => require('../command/init')(...cmd.slice(0, -1)))
+
+program.parse(process.argv)
+
+if (!program.args.length) {
+  program.help()
+}
