@@ -94,36 +94,18 @@ async function create(distinct) {
   const spinnerDownload = ora(`Download template from ${templateGitUrl}`)
   spinnerDownload.start()
   exec(command, (error, stdout, stderr) => {
-    spinnerDownload.stop()
-    const spinner = ora('Start generating')
-    spinner.start()
+    spinnerDownload.succeed('Download completed')
+    console.log('Start generating')
+    console.log()
     const templatePath = path.resolve('.template-react')
+    const { prompts, ignores } = require(path.join(templatePath, 'config.js'))
     const metalsmith = Metalsmith(path.join(templatePath, 'template'))
     metalsmith
       .clean(false)
       .source('.')
-      .ignore(['.git'])
-      .use((files, metalsmith, done) => {
-        const keys = Object.keys(files)
-        const metalsmithMetadata = metalsmith.metadata()
-        async.each(
-          keys,
-          (file, next) => {
-            const str = files[file].contents.toString()
-            if (!/{{([^{}]+)}}/g.test(str)) {
-              return next()
-            }
-            render(str, metalsmithMetadata, (err, res) => {
-              if (err) {
-                return next(err)
-              }
-              files[file].contents = Buffer.from(res)
-              next()
-            })
-          },
-          done
-        )
-      })
+      .ignore(ignores)
+      .use(confirm(prompts))
+      .use(renderTemplate())
       .destination(root)
       .build(err => {
         fs.removeSync(templatePath)
@@ -131,16 +113,55 @@ async function create(distinct) {
           console.log(chalk.green('\n √ Generation completed!'))
           console.log(`\n cd ${distinct} && npm install \n`)
         }
-        spinner.stop()
         process.exit()
       })
 
     if (error) {
-      spinnerDownload.stop()
-      console.log(error)
+      spinnerDownload.fail(`Download failure, ${error}`)
       process.exit()
     }
   })
+}
+
+function confirm(prompts) {
+  return (files, metalsmith, done) => {
+    const metadata = metalsmith.metadata()
+    async.eachSeries(
+      prompts,
+      (cfg, next) =>
+        inquirer
+          .prompt([cfg])
+          .then(answers => {
+            Object.assign(metadata, answers)
+            next()
+          })
+          .catch(next),
+      done
+    )
+  }
+}
+
+function renderTemplate() {
+  return (files, metalsmith, done) => {
+    const metadata = metalsmith.metadata()
+    async.each(
+      Object.keys(files),
+      (file, next) => {
+        const str = files[file].contents.toString()
+        if (!/{{([^{}]+)}}/g.test(str)) {
+          return next()
+        }
+        render(str, metadata, (err, res) => {
+          if (err) {
+            return next()
+          }
+          files[file].contents = Buffer.from(res)
+          next()
+        })
+      },
+      done
+    )
+  }
 }
 
 module.exports = (...args) => {
