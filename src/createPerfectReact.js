@@ -88,7 +88,7 @@ async function create(distinct) {
   console.log(`Creating a new perfect react project in ${chalk.green(root)}.`)
   console.log()
 
-  const templateGitUrl = 'git@github.com:codeleafs/template-react.git'
+  const templateGitUrl = 'https://github.com/codeleafs/template-react.git'
   const command = `git clone ${templateGitUrl} .template-react`
 
   const spinnerDownload = ora(`Download template from ${templateGitUrl}`)
