@@ -1,4 +1,4 @@
-# create-react-app
+# create-perfect-react
 
 A global command for scaffolding mature projects.
 
