@@ -100,6 +100,10 @@ async function create(distinct) {
     const templatePath = path.resolve('.template-react')
     const { prompts, ignores } = require(path.join(templatePath, 'config.js'))
     const metalsmith = Metalsmith(path.join(templatePath, 'template'))
+    Object.assign(metalsmith.metadata(), {
+      appName: projectName,
+      year: new Date().getFullYear()
+    })
     metalsmith
       .clean(false)
       .source('.')
